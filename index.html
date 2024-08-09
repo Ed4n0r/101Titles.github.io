@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+  <title>Загрузка файлов</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    #file-form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #file-input {
+      margin: 10px;
+    }
+    #submit-button {
+      margin: 10px;
+      padding: 5px 10px;
+      border: 1px solid #000;
+      border-radius: 5px;
+      background-color: #000;
+      color: #fff;
+      cursor: pointer;
+    }
+    #search-form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #search-input {
+      margin: 10px;
+    }
+    #search-button {
+      margin: 10px;
+      padding: 5px 10px;
+      border: 1px solid #000;
+      border-radius: 5px;
+      background-color: #000;
+      color: #fff;
+      cursor: pointer;
+    }
+    #file-list {
+      list-style-type: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #file-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+    #file-list li a {
+      text-decoration: none;
+      color: #000;
+    }
+    #file-list li button {
+      margin: 0 5px;
+      padding: 5px 10px;
+      border: 1px solid #000;
+      border-radius: 5px;
+      background-color: #000;
+      color: #fff;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Загрузка файлов</h1>
+  <form id="file-form" method="post" enctype="multipart/form-data">
+    <label for="file-input">Выберите файл:</label>
+    <input type="file" id="file-input" name="file">
+    <button type="submit" id="submit-button">Загрузить</button>
+  </form>
+
+  <hr>
+
+  <h1>Поиск файлов</h1>
+  <form id="search-form">
+    <label for="search-input">Поиск по названию файла:</label>
+    <input type="text" id="search-input" name="search">
+    <button type="button" id="search-button">Найти</button>
+  </form>
+
+  <hr>
+
+  <h1>Список файлов</h1>
+  <ul id="file-list"></ul>
+
+  <script>
+    // Функция для загрузки файла
+    const uploadFile = (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert("Файл успешно загружен.");
+          window.location.reload();
+        } else {
+          alert("Ошибка загрузки файла.");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Произошла ошибка при загрузке файла.");
+      });
+    };
+
+    // Функция для поиска файлов
+    const searchFiles = (e) => {
+      e.preventDefault();
+
+      const searchTerm = e.target.querySelector('input[name="search"]').value;
+
+      fetch(`/search?search=${searchTerm}`)
+      .then(res => res.json())
+      .then(data => {
+        const fileList = document.getElementById('file-list');
+        fileList.innerHTML = '';
+
+        data.files.forEach(file => {
+          const fileItem = document.createElement('li');
+          const fileLink = document.createElement('a');
+          fileLink.href = `/download?file=${file.name}`;
+          fileLink.textContent = file.name;
+          const deleteButton = document.createElement('button');
+          deleteButton.textContent = 'Удалить';
+          deleteButton.addEventListener('click', () => {
+            if (confirm(`Удалить файл "${file.name}"?`)) {
+              fetch(`/delete?file=${file.name}`, {
+                method: 'DELETE'
+              })
+              .then(res => res.json())
+              .then(data => {
+                if (data.success) {
+                  alert("Файл успешно удален.");
+                  window.location.reload();
+                } else {
+                  alert("Ошибка удаления файла.");
+                }
+              })
+              .catch(err => {
+                console.error(err);
+                alert("Произошла ошибка при удалении файла.");
+              });
+            }
+          });
+
+          fileItem.appendChild(fileLink);
+          fileItem.appendChild(deleteButton);
+          fileList.appendChild(fileItem);
+        });
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Произошла ошибка при поиске файлов.");
+      });
+    };
+
+    // Прикрепляем обработчики событий к формам
+    const fileForm = document.getElementById('file-form');
+    fileForm.addEventListener('submit', uploadFile);
+
+    const searchForm = document.getElementById('search-form');
+    searchForm.addEventListener('submit', searchFiles);
+
+    // Загружаем список файлов при загрузке страницы
+    window.addEventListener('load', () => {
+      fetch('/files')
+      .then(res => res.json())
+      .then(data => {
+        const fileList = document.getElementById('file-list');
+        fileList.innerHTML = '';
+
+        data.files.forEach(file => {
+          const fileItem = document.createElement('li');
+          const fileLink = document.createElement('a');
+          fileLink.href = `/download?file=${file.name}`;
+          fileLink.textContent = file.name;
+          const deleteButton = document.createElement('button');
+          deleteButton.textContent = 'Удалить';
+          deleteButton.addEventListener('click', () => {
+            if (confirm(`Удалить файл "${file.name}"?`)) {
+              fetch(`/delete?file=${file.name}`, {
+                method: 'DELETE'
+              })
+              .then(res => res.json())
+              .then(data => {
+                if (data.success) {
+                  alert("Файл успешно удален.");
+                  window.location.reload();
+                } else {
+                  alert("Ошибка удаления файла.");
+                }
+              })
+              .catch(err => {
+                console.error(err);
+                alert("Произошла ошибка при удалении файла.");
+              });
+            }
+          });
+
+          fileItem.appendChild(fileLink);
+          fileItem.appendChild(deleteButton);
+          fileList.appendChild(fileItem);
+        });
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Произошла ошибка при загрузке списка файлов.");
+      });
+    });
+  </script>
+</body>
+</html>
